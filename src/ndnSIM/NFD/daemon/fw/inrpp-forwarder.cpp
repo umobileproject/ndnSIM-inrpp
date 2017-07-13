@@ -82,8 +82,7 @@ InrppForwarder::onOutgoingData(const Data& data, Face& outFace)
 		 	                  " data=" << data.getName() << " size=" <<   data.getContent().size());
 		  m_outTable.insert(std::pair<FaceId,Name>(outFace.getId(),data.getName()));
 
-		  std::map<FaceId,uint32_t>::iterator it;
-		  it = m_bytes.find(outFace.getId());
+		  std::map<FaceId,uint32_t>::iterator it = m_bytes.find(outFace.getId());
 		  if(it != m_bytes.end())
 		  {
 			  NFD_LOG_DEBUG("Bytes in the queue="<<it->second);
@@ -166,8 +165,7 @@ InrppForwarder::onContentStoreHit(FaceId id, const Interest& interest, const Dat
 	 outFace->sendData(data);
 	 ++m_counters.nOutData;
 
-	std::map<FaceId,uint32_t>::iterator it;
-	it = m_bytes.find(id);
+	std::map<FaceId,uint32_t>::iterator it = m_bytes.find(id);
 	if(it != m_bytes.end())
 	{
 		NFD_LOG_DEBUG("Bytes in the queue="<<it->second << " " << id);

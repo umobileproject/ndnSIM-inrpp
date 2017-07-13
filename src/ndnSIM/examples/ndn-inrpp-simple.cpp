@@ -72,7 +72,7 @@ main(int argc, char* argv[])
 
   // Install NDN stack on all nodes
   ndn::InrppStackHelper ndnHelper;
-  ndnHelper.setCsSize(100);
+  ndnHelper.setCsSize(1000);
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
