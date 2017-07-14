@@ -36,7 +36,6 @@
 
 #include "ns3/ndnSIM/NFD/daemon/fw/inrpp-forwarder.hpp"
 #include "ns3/ndnSIM/NFD/daemon/face/generic-link-service.hpp"
-#include "ns3/ndnSIM/NFD/daemon/face/inrpp-face.hpp"
 #include "ns3/ndnSIM/NFD/daemon/face/inrpp-link-service.hpp"
 #include "ns3/ndnSIM/NFD/daemon/table/cs-policy-priority-fifo.hpp"
 #include "ns3/ndnSIM/NFD/daemon/table/cs-policy-lru.hpp"

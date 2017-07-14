@@ -22,6 +22,10 @@
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/ndnSIM-module.h"
+#include "ns3/ndnSIM/helper/inrpp-stack-helper.hpp"
+#include "ns3/ndnSIM/model/ndn-l3-protocol.hpp"
+
+NS_LOG_COMPONENT_DEFINE ("ndn.inrpp_topology");
 
 namespace ns3 {
 
@@ -45,6 +49,31 @@ namespace ns3 {
  *     NS_LOG=ndn.Consumer:ndn.Producer ./waf --run=ndn-congestion-topo-plugin
  */
 
+
+static void OutInterests(const Interest& interest, const Face& face)
+{
+	NS_LOG_LOGIC("Out interest "<<interest.getName().toUri());
+
+}
+
+static void InInterests(const Interest& interest, const Face& face)
+{
+	NS_LOG_LOGIC("Dropped packet");
+
+}
+
+static void OutData(const Data& data, const Face& face)
+{
+	NS_LOG_LOGIC("Dropped packet");
+
+}
+
+static void InData(const Data& data, const Face& face)
+{
+	NS_LOG_LOGIC("Dropped packet");
+
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -56,9 +85,12 @@ main(int argc, char* argv[])
   topologyReader.Read();
 
   // Install NDN stack on all nodes
-  ndn::StackHelper ndnHelper;
-  ndnHelper.SetOldContentStore("ns3::ndn::cs::Lru", "MaxSize", "10000");
+  ndn::InrppStackHelper ndnHelper;
+  ndnHelper.setCsSize(1000);
+  ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
+ // ndnHelper.SetOldContentStore("ns3::ndn::cs::Lru", "MaxSize", "10000");
+ // ndnHelper.InstallAll();
 
   // Choosing forwarding strategy
   ndn::StrategyChoiceHelper::InstallAll("/prefix", "/localhost/nfd/strategy/best-route");
@@ -74,9 +106,23 @@ main(int argc, char* argv[])
   Ptr<Node> producer1 = Names::Find<Node>("Dst1");
   Ptr<Node> producer2 = Names::Find<Node>("Dst2");
 
-  ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
-  consumerHelper.SetAttribute("Frequency", StringValue("10")); // 100 interests a second
 
+  Ptr<Node> router2 = Names::Find<Node>("Rtr2");
+
+  Ptr<L3Protocol> l3 = router2->GetObject<L3Protocol>();
+
+
+  l3->TraceConnectWithoutContext("OutInterests", MakeCallback(&OutInterests));
+  l3->TraceConnectWithoutContext("InInterests", MakeCallback(&InInterests));
+  l3->TraceConnectWithoutContext("OutData", MakeCallback(&OutData));
+  l3->TraceConnectWithoutContext("InData", MakeCallback(&InData));
+
+
+  ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+  consumerHelper.SetAttribute("Frequency", StringValue("1000")); // 10 interests a second
+  consumerHelper.SetAttribute("LifeTime", StringValue("100s")); // 10 interests a second
+  consumerHelper.SetAttribute("RetxTimer", StringValue("100s"));
+  consumerHelper.SetAttribute("MaxSeq",StringValue("1000"));
   // on the first consumer node install a Consumer application
   // that will express interests in /dst1 namespace
   consumerHelper.SetPrefix("/dst1");
@@ -88,7 +134,7 @@ main(int argc, char* argv[])
   consumerHelper.Install(consumer2);
 
   ndn::AppHelper producerHelper("ns3::ndn::Producer");
-  producerHelper.SetAttribute("PayloadSize", StringValue("1450"));
+  producerHelper.SetAttribute("PayloadSize", StringValue("1495"));
 
   // Register /dst1 prefix with global routing controller and
   // install producer that will satisfy Interests in /dst1 namespace

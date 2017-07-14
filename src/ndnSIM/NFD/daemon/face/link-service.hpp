@@ -198,7 +198,7 @@ private: // lower interface to be overridden in subclass
   virtual void
   doReceivePacket(Transport::Packet&& packet) = 0;
 
-private:
+protected:
   Face* m_face;
   Transport* m_transport;
 };

@@ -41,7 +41,7 @@ InrppLinkService::InrppLinkService(const GenericLinkService::Options& options, s
 	NFD_LOG_FACE_TRACE(this);
 	m_forwarder = forwarder;
 	double timing = (double)1500*8/bps*1000000000;
-	m_adjustCapacityInterval = time::nanoseconds((int)timing);
+	m_adjustCapacityInterval = time::nanoseconds((int)timing) ;
 	m_bps = bps;
 	NFD_LOG_DEBUG("Time at " << timing);
 	m_adjustCapacityEvent = scheduler::schedule(m_adjustCapacityInterval,bind(&InrppLinkService::PullPacketFromCS, this));
@@ -57,7 +57,24 @@ InrppLinkService::PullPacketFromCS()
 
 }
 
+void
+InrppLinkService::receiveInterest(const Interest& interest)
+{
+  NFD_LOG_FACE_TRACE(__func__);
+  if(interest.getNonce()==0)
+  {
+	  scheduler::cancel(m_faceStateEvent);
+	  m_face->setInrppState(InrppState::CLOSED_LOOP);
+	  time::nanoseconds m_faceInterval = time::nanoseconds((int)2000000000);
+	  m_faceStateEvent = scheduler::schedule(m_faceInterval,bind(&InrppLinkService::CancelClosedLoop, this));
+  }
+  LinkService::receiveInterest(interest);
+}
 
-
+void
+InrppLinkService::CancelClosedLoop()
+{
+	 m_face->setInrppState(InrppState::OPEN_LOOP);
+}
 } // namespace face
 } // namespace nfd

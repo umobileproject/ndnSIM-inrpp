@@ -53,6 +53,10 @@ const FaceId FACEID_RESERVED_MAX = 255;
  */
 typedef TransportState FaceState;
 
+enum InrppState{
+	CLOSED_LOOP,
+	OPEN_LOOP
+};
 /** \brief generalization of a network interface
  *
  *  A face generalizes a network interface.
@@ -64,11 +68,7 @@ typedef TransportState FaceState;
  *  LinkService is the upper part, which translates between network-layer packets
  *  and TLV blocks, and may provide additional services such as fragmentation and reassembly.
  */
-class Face
-#ifndef WITH_TESTS
-final
-#endif
-  : public enable_shared_from_this<Face>, noncopyable
+class Face : public enable_shared_from_this<Face>, noncopyable
 {
 public:
   Face(unique_ptr<LinkService> service, unique_ptr<Transport> transport);
@@ -161,6 +161,11 @@ public: // dynamic properties
   FaceState
   getState() const;
 
+  InrppState
+  getInrppState() const;
+
+  void
+  setInrppState(InrppState state);
   /** \brief signals after face state changed
    */
   signal::Signal<Transport, FaceState/*old*/, FaceState/*new*/>& afterStateChange;
@@ -193,7 +198,20 @@ private:
   unique_ptr<Transport> m_transport;
   FaceCounters m_counters;
   uint64_t m_metric;
+  InrppState m_state;
 };
+
+inline InrppState
+Face::getInrppState() const
+{
+  return m_state;
+}
+
+inline void
+Face::setInrppState(InrppState state)
+{
+  m_state = state;
+}
 
 inline LinkService*
 Face::getLinkService() const

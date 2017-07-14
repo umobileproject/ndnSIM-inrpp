@@ -47,9 +47,15 @@ private:
   void
   PullPacketFromCS();
 
+  void
+  receiveInterest(const Interest& interest);
+
+  void
+  CancelClosedLoop();
+
   shared_ptr<nfd::Forwarder> m_forwarder;
-  scheduler::EventId m_adjustCapacityEvent;
   time::nanoseconds m_adjustCapacityInterval;
+  scheduler::EventId m_adjustCapacityEvent, m_faceStateEvent;
   uint64_t m_bps;
 };
 

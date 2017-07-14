@@ -45,7 +45,7 @@ InrppForwarder::InrppForwarder() : Forwarder()
 InrppForwarder::~InrppForwarder() = default;
 
 void
-InrppForwarder::onOutgoingData(const Data& data, Face& outFace)
+InrppForwarder::onOutgoingData(const Data& data, Face& inFace, Face& outFace)
 {
 	  if (outFace.getId() == face::INVALID_FACEID) {
 	    NFD_LOG_WARN("onOutgoingData face=invalid data=" << data.getName());
@@ -80,7 +80,7 @@ InrppForwarder::onOutgoingData(const Data& data, Face& outFace)
 		  //auto interest = make_shared<ndn::Interest>(data.getName());
 		  NFD_LOG_DEBUG("Prefix outgoingdata face=" << outFace.getId() <<
 		 	                  " data=" << data.getName() << " size=" <<   data.getContent().size());
-		  m_outTable.insert(std::pair<FaceId,Name>(outFace.getId(),data.getName()));
+		  m_outTable.insert(std::pair<FaceId,nameFace>(outFace.getId(),nameFace(data.getName(),inFace.getId())));
 
 		  std::map<FaceId,uint32_t>::iterator it = m_bytes.find(outFace.getId());
 		  if(it != m_bytes.end())
@@ -103,22 +103,105 @@ InrppForwarder::onOutgoingData(const Data& data, Face& outFace)
 }
 
 void
-InrppForwarder::sendData(FaceId id,uint64_t bps)
+InrppForwarder::onIncomingData(Face& inFace, const Data& data)
+{
+  // receive Data
+  NFD_LOG_DEBUG("onIncomingData face=" << inFace.getId() << " data=" << data.getName());
+  data.setTag(make_shared<lp::IncomingFaceIdTag>(inFace.getId()));
+  ++m_counters.nInData;
+
+  // /localhost scope control
+  bool isViolatingLocalhost = inFace.getScope() == ndn::nfd::FACE_SCOPE_NON_LOCAL &&
+                              scope_prefix::LOCALHOST.isPrefixOf(data.getName());
+  if (isViolatingLocalhost) {
+    NFD_LOG_DEBUG("onIncomingData face=" << inFace.getId() <<
+                  " data=" << data.getName() << " violates /localhost");
+    // (drop)
+    return;
+  }
+
+  // PIT match
+  pit::DataMatchResult pitMatches = m_pit.findAllDataMatches(data);
+  if (pitMatches.begin() == pitMatches.end()) {
+    // goto Data unsolicited pipeline
+    onDataUnsolicited(inFace, data);
+    return;
+  }
+
+  shared_ptr<Data> dataCopyWithoutTag = make_shared<Data>(data);
+  dataCopyWithoutTag->removeTag<lp::HopCountTag>();
+
+  // CS insert
+  if (m_csFromNdnSim == nullptr)
+  {
+	  NFD_LOG_DEBUG("NFD CACHE");
+	  m_cs.insert(*dataCopyWithoutTag);
+  }
+  else
+  {
+	  NFD_LOG_DEBUG("NS3 CACHE " << m_csFromNdnSim->GetTypeId());
+	  m_csFromNdnSim->Add(dataCopyWithoutTag);
+  }
+
+  std::set<Face*> pendingDownstreams;
+  // foreach PitEntry
+  auto now = time::steady_clock::now();
+  for (const shared_ptr<pit::Entry>& pitEntry : pitMatches) {
+    NFD_LOG_DEBUG("onIncomingData matching=" << pitEntry->getName());
+
+    // cancel unsatisfy & straggler timer
+    this->cancelUnsatisfyAndStragglerTimer(*pitEntry);
+
+    // remember pending downstreams
+    for (const pit::InRecord& inRecord : pitEntry->getInRecords()) {
+      if (inRecord.getExpiry() > now) {
+        pendingDownstreams.insert(&inRecord.getFace());
+      }
+    }
+
+    // invoke PIT satisfy callback
+    //beforeSatisfyInterest(*pitEntry, inFace, data);
+    this->dispatchToStrategy(*pitEntry,
+      [&] (fw::Strategy& strategy) { strategy.beforeSatisfyInterest(pitEntry, inFace, data); });
+
+    // Dead Nonce List insert if necessary (for out-record of inFace)
+    this->insertDeadNonceList(*pitEntry, true, data.getFreshnessPeriod(), &inFace);
+
+    // mark PIT satisfied
+    pitEntry->clearInRecords();
+    pitEntry->deleteOutRecord(inFace);
+
+    // set PIT straggler timer
+    this->setStragglerTimer(pitEntry, true, data.getFreshnessPeriod());
+  }
+
+  // foreach pending downstream
+  for (Face* pendingDownstream : pendingDownstreams) {
+    if (pendingDownstream == &inFace) {
+      continue;
+    }
+    // goto outgoing Data pipeline
+    this->onOutgoingData(data,inFace, *pendingDownstream);
+  }
+}
+
+void
+InrppForwarder::sendData(FaceId id, uint64_t bps)
 {
     //NFD_LOG_DEBUG(this << " SendData face=" << id << " outTable " << m_outTable.size() << " cslimit="<< m_cs.getLimit() << " size="<<m_cs.size());
-	std::map<FaceId,Name>::iterator it = m_outTable.find(id);
+	std::map<FaceId,nameFace>::iterator it = m_outTable.find(id);
 
-	NFD_LOG_DEBUG("outTable size=" << m_outTable.size());
+	//NFD_LOG_DEBUG("outTable size=" << m_outTable.size());
 	if(it!=m_outTable.end())
 	{
 
-		Name name = it->second;
-		NFD_LOG_DEBUG("Send=" << name << " " << m_cs.getLimit() << " " << m_cs.size());
+		nameFace name = it->second;
+		NFD_LOG_DEBUG("Send=" << name.first << " " << m_cs.getLimit() << " " << m_cs.size());
 
-	    const ndn::Interest& interest(name);
+	    const ndn::Interest& interest(name.first);
 		m_cs.find(interest,
 		               bind(&InrppForwarder::onContentStoreHit, this,id, _1, _2),
-		               bind(&InrppForwarder::onContentStoreMiss, this, _1));
+		               bind(&InrppForwarder::onContentStoreMiss, this,name.second, _1));
 		//m_cs.find(it->second);
 		NFD_LOG_DEBUG("outTable size=" << m_outTable.size());
 		m_outTable.erase(it);
@@ -157,6 +240,20 @@ InrppForwarder::GetPackets(FaceId id)
 }
 
 void
+InrppForwarder::onOutgoingInterest(const shared_ptr<pit::Entry>& pitEntry, Face& outFace, const Interest& interest)
+{
+  NFD_LOG_DEBUG("onOutgoingInterest face=" << outFace.getId() <<
+                " interest=" << pitEntry->getName());
+
+  // insert out-record
+  pitEntry->insertOrUpdateOutRecord(outFace, interest);
+
+  // send Interest
+  outFace.sendInterest(interest);
+  ++m_counters.nOutInterests;
+}
+
+void
 InrppForwarder::onContentStoreHit(FaceId id, const Interest& interest, const Data& data)
 //InrppForwarder::onContentStoreHit( Face& outFace, const shared_ptr<pit::Entry>& pitEntry, const Interest& interest, const Data& data)
 {
@@ -176,10 +273,19 @@ InrppForwarder::onContentStoreHit(FaceId id, const Interest& interest, const Dat
 }
 
 void
-InrppForwarder::onContentStoreMiss(const Interest& interest)
+InrppForwarder::onContentStoreMiss(FaceId id, const Interest& interest)
 //InrppForwarder::onContentStoreMiss( Face& inFace, const shared_ptr<pit::Entry>& pitEntry,const Interest& interest)
 {
     NFD_LOG_DEBUG("onContentStoreMiss");
+   // m_bytes.
+	std::map<FaceId,uint32_t>::iterator it = m_bytes.find(id);
+	if(it!=m_bytes.end())m_bytes.erase(it);
+
+	m_faceTable.get(id)->setInrppState(nfd::face::CLOSED_LOOP);
+
+	shared_ptr<Interest> inter = make_shared<Interest>(interest);
+	inter->setNonce(0);
+	m_faceTable.get(id)->sendInterest(interest);
 
 }
 } // namespace nfd

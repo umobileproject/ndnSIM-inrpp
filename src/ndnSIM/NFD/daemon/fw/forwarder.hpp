@@ -193,7 +193,7 @@ public:
    */
   signal::Signal<Forwarder, pit::Entry> beforeExpirePendingInterest;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE: // pipelines
+PUBLIC_WITH_TESTS_ELSE_PROTECTED: // pipelines
   /** \brief incoming Interest pipeline
    */
   VIRTUAL_WITH_TESTS void
@@ -240,7 +240,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE: // pipelines
 
   /** \brief incoming Data pipeline
    */
-  VIRTUAL_WITH_TESTS void
+  virtual void
   onIncomingData(Face& inFace, const Data& data);
 
   /** \brief Data unsolicited pipeline
@@ -250,7 +250,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE: // pipelines
 
   /** \brief outgoing Data pipeline
    */
-  virtual void
+  VIRTUAL_WITH_TESTS void
   onOutgoingData(const Data& data, Face& outFace);
 
   /** \brief incoming Nack pipeline
@@ -263,7 +263,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE: // pipelines
   VIRTUAL_WITH_TESTS void
   onOutgoingNack(const shared_ptr<pit::Entry>& pitEntry, const Face& outFace, const lp::NackHeader& nack);
 
-PROTECTED_WITH_TESTS_ELSE_PRIVATE:
+PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   VIRTUAL_WITH_TESTS void
   setUnsatisfyTimer(const shared_ptr<pit::Entry>& pitEntry);
 

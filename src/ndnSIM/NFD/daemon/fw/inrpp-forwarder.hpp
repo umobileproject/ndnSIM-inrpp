@@ -36,6 +36,7 @@ namespace fw {
 class Strategy;
 } // namespace fw
 
+typedef std::pair<Name,FaceId> nameFace;
 /** \brief main class of NFD
  *
  *  Forwarder owns all faces and tables, and implements forwarding pipelines.
@@ -48,17 +49,26 @@ public:
   VIRTUAL_WITH_TESTS
   ~InrppForwarder();
 
-public:
-  /** \brief outgoing Data pipeline
-   */
-  VIRTUAL_WITH_TESTS void
-  onOutgoingData(const Data& data, Face& outFace);
+  int
+  GetPackets(FaceId id);
 
   void
   sendData(FaceId id,uint64_t bps);
 
-  int
-  GetPackets(FaceId id);
+PUBLIC_WITH_TESTS_ELSE_PROTECTED: // pipelines
+  /** \brief outgoing Data pipeline
+   */
+  VIRTUAL_WITH_TESTS void
+  onOutgoingData(const Data& data, Face& inFace, Face& outFace);
+
+  VIRTUAL_WITH_TESTS void
+  onIncomingData(Face& inFace, const Data& data);
+
+  /** \brief outgoing Interest pipeline
+    */
+   VIRTUAL_WITH_TESTS void
+   onOutgoingInterest(const shared_ptr<pit::Entry>& pitEntry, Face& outFace, const Interest& interest);
+
 private:
   void
   //onContentStoreHit( Face& outFace,const shared_ptr<pit::Entry>& pitEntry, const Interest& interest, const Data& data);
@@ -66,11 +76,11 @@ private:
 
   void
   //onContentStoreMiss( Face& inFace, const shared_ptr<pit::Entry>& pitEntry,const Interest& interest);
-  onContentStoreMiss(const Interest& interest);
+  onContentStoreMiss(FaceId id, const Interest& interest);
 private:
 
   ns3::Ptr<ns3::ndn::ContentStore> m_csFromNdnSim;
-  std::multimap<FaceId,Name> m_outTable;
+  std::multimap<FaceId,nameFace> m_outTable;
   std::map<FaceId,uint32_t> m_bytes;
   std::map<FaceId,double> m_queueTime;
 
