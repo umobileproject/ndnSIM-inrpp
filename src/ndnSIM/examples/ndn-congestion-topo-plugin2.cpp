@@ -18,7 +18,7 @@
  **/
 
 // ndn-congestion-topo-plugin.cpp
-
+#include "ns3/node.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/ndnSIM-module.h"
@@ -26,6 +26,9 @@
 #include "ns3/ndnSIM/model/ndn-l3-protocol.hpp"
 
 NS_LOG_COMPONENT_DEFINE ("ndn.inrpp_topology");
+using ndn::Interest;
+using ndn::Data;
+using nfd::Face;
 
 namespace ns3 {
 
@@ -50,29 +53,30 @@ namespace ns3 {
  */
 
 
-static void OutInterests(const Interest& interest, const Face& face)
+static void OutInterests(uint32_t val, const Interest& interest, const Face& face)
 {
-	NS_LOG_LOGIC("Out interest "<<interest.getName().toUri());
+	NS_LOG_LOGIC("Node " << val << " out interest "<<interest.getName().toUri() << " in face " << face.getId());
 
 }
 
-static void InInterests(const Interest& interest, const Face& face)
+static void InInterests(uint32_t val, const Interest& interest, const Face& face)
 {
-	NS_LOG_LOGIC("Dropped packet");
+	NS_LOG_LOGIC("Node " << val << " in interest "<<interest.getName().toUri() << " in face " << face.getId());
 
 }
 
-static void OutData(const Data& data, const Face& face)
+void OutData(uint32_t val, const Data& data, const Face& face)
 {
-	NS_LOG_LOGIC("Dropped packet");
+	NS_LOG_LOGIC("Node " << val << " out data packet "<< data.getName().toUri() << " in face " << face.getId());
 
 }
 
-static void InData(const Data& data, const Face& face)
+static void InData(uint32_t val, const Data& data, const Face& face)
 {
-	NS_LOG_LOGIC("Dropped packet");
+	NS_LOG_LOGIC("Node " << val << " in data packet "<< data.getName().toUri() << " in face " << face.getId());
 
 }
+
 
 int
 main(int argc, char* argv[])
@@ -85,7 +89,7 @@ main(int argc, char* argv[])
   topologyReader.Read();
 
   // Install NDN stack on all nodes
-  ndn::InrppStackHelper ndnHelper;
+  ns3::ndn::InrppStackHelper ndnHelper;
   ndnHelper.setCsSize(1000);
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
@@ -108,14 +112,6 @@ main(int argc, char* argv[])
 
 
   Ptr<Node> router2 = Names::Find<Node>("Rtr2");
-
-  Ptr<L3Protocol> l3 = router2->GetObject<L3Protocol>();
-
-
-  l3->TraceConnectWithoutContext("OutInterests", MakeCallback(&OutInterests));
-  l3->TraceConnectWithoutContext("InInterests", MakeCallback(&InInterests));
-  l3->TraceConnectWithoutContext("OutData", MakeCallback(&OutData));
-  l3->TraceConnectWithoutContext("InData", MakeCallback(&InData));
 
 
   ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
@@ -150,6 +146,19 @@ main(int argc, char* argv[])
 
   // Calculate and install FIBs
   ndn::GlobalRoutingHelper::CalculateRoutes();
+
+
+  Ptr<ndn::L3Protocol> l3 = router2->GetObject<ndn::L3Protocol>();
+
+  NS_LOG_LOGIC("L3 "<<l3);
+
+  l3->TraceConnectWithoutContext("OutInterests",MakeBoundCallback(&OutInterests,router2->GetId()));
+  l3->TraceConnectWithoutContext("InInterests", MakeBoundCallback(&InInterests,router2->GetId()));
+  l3->TraceConnectWithoutContext("OutData", MakeBoundCallback(&OutData,router2->GetId()));
+  l3->TraceConnectWithoutContext("InData", MakeBoundCallback(&InData,router2->GetId()));
+
+  NS_LOG_LOGIC("L3 "<<l3);
+
 
   Simulator::Stop(Seconds(20.0));
 
