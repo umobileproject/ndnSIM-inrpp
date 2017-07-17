@@ -473,6 +473,7 @@ L3Protocol::addFace(shared_ptr<Face> face)
       }
     });
 
+
   tracingLink->afterSendNack.connect([this, weakFace](const lp::Nack& nack) {
       shared_ptr<Face> face = weakFace.lock();
       if (face != nullptr) {
@@ -480,6 +481,12 @@ L3Protocol::addFace(shared_ptr<Face> face)
       }
     });
 
+  tracingLink->afterSendInterest.connect([this, weakFace](const Interest& interest) {
+      shared_ptr<Face> face = weakFace.lock();
+      if (face != nullptr) {
+        this->m_outInterests(interest, *face);
+      }
+    });
   return face->getId();
 }
 

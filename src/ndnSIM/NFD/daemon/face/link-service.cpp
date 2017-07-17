@@ -55,7 +55,7 @@ void
 LinkService::sendInterest(const Interest& interest)
 {
   BOOST_ASSERT(m_transport != nullptr);
-  NFD_LOG_FACE_TRACE(__func__);
+  NFD_LOG_FACE_TRACE(__func__ << " " << interest.getName().toUri());
 
   ++this->nOutInterests;
 
@@ -93,10 +93,9 @@ LinkService::sendNack(const ndn::lp::Nack& nack)
 void
 LinkService::receiveInterest(const Interest& interest)
 {
-  NFD_LOG_FACE_TRACE(__func__);
+	  NFD_LOG_FACE_TRACE(__func__ << " " << interest.getName().toUri());
 
   ++this->nInInterests;
-
   afterReceiveInterest(interest);
 }
 

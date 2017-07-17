@@ -24,6 +24,7 @@
 #include "ns3/string.h"
 #include "ns3/point-to-point-net-device.h"
 #include "ns3/point-to-point-channel.h"
+#include "model/inrpp-l3-protocol.hpp"
 
 #include "model/ndn-net-device-transport.hpp"
 #include "utils/ndn-time.hpp"
@@ -60,7 +61,7 @@ InrppStackHelper::InrppStackHelper()
 
   m_csPolicyCreationFunc = m_csPolicies["nfd::cs::priority_fifo"];
 
-  m_ndnFactory.SetTypeId("ns3::ndn::L3Protocol");
+  m_ndnFactory.SetTypeId("ns3::ndn::InrppL3Protocol");
   m_contentStoreFactory.SetTypeId("ns3::ndn::cs::Lru");
 
   m_netDeviceCallbacks.push_back(
@@ -174,13 +175,13 @@ InrppStackHelper::Install(Ptr<Node> node) const
 {
   Ptr<FaceContainer> faces = Create<FaceContainer>();
 
-  if (node->GetObject<L3Protocol>() != 0) {
+  if (node->GetObject<InrppL3Protocol>() != 0) {
     NS_FATAL_ERROR("Cannot re-install NDN stack on node "
                    << node->GetId());
     return 0;
   }
 
-  Ptr<L3Protocol> ndn = m_ndnFactory.Create<L3Protocol>();
+  Ptr<InrppL3Protocol> ndn = m_ndnFactory.Create<InrppL3Protocol>();
 
   shared_ptr<nfd::InrppForwarder> fw =  make_shared<nfd::InrppForwarder>();
 
@@ -272,7 +273,7 @@ constructFaceUri(Ptr<NetDevice> netDevice)
 
 
 shared_ptr<Face>
-InrppStackHelper::DefaultNetDeviceCallback(Ptr<Node> node, Ptr<L3Protocol> ndn,
+InrppStackHelper::DefaultNetDeviceCallback(Ptr<Node> node, Ptr<InrppL3Protocol> ndn,
                                       Ptr<NetDevice> netDevice) const
 {
   NS_LOG_DEBUG("Creating default Face on node " << node->GetId());
@@ -299,7 +300,7 @@ InrppStackHelper::DefaultNetDeviceCallback(Ptr<Node> node, Ptr<L3Protocol> ndn,
 }
 
 shared_ptr<Face>
-InrppStackHelper::PointToPointNetDeviceCallback(Ptr<Node> node, Ptr<L3Protocol> ndn,
+InrppStackHelper::PointToPointNetDeviceCallback(Ptr<Node> node, Ptr<InrppL3Protocol> ndn,
                                            Ptr<NetDevice> device) const
 {
   NS_LOG_DEBUG("Creating point-to-point Face on node " << node->GetId());
@@ -351,12 +352,12 @@ InrppStackHelper::Install(const std::string& nodeName) const
 void
 InrppStackHelper::Update(Ptr<Node> node)
 {
-  if (node->GetObject<L3Protocol>() == 0) {
+  if (node->GetObject<InrppL3Protocol>() == 0) {
     Install(node);
     return;
   }
 
-  Ptr<L3Protocol> ndn = node->GetObject<L3Protocol>();
+  Ptr<InrppL3Protocol> ndn = node->GetObject<InrppL3Protocol>();
 
   for (uint32_t index = 0; index < node->GetNDevices(); index++) {
 
@@ -390,7 +391,7 @@ InrppStackHelper::UpdateAll()
 }
 
 shared_ptr<Face>
-InrppStackHelper::createAndRegisterFace(Ptr<Node> node, Ptr<L3Protocol> ndn, Ptr<NetDevice> device) const
+InrppStackHelper::createAndRegisterFace(Ptr<Node> node, Ptr<InrppL3Protocol> ndn, Ptr<NetDevice> device) const
 {
   shared_ptr<Face> face;
 

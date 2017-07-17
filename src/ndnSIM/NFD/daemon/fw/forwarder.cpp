@@ -147,14 +147,14 @@ Forwarder::onIncomingInterest(Face& inFace, const Interest& interest)
   shared_ptr<pit::Entry> pitEntry = m_pit.insert(interest).first;
 
 
-  NFD_LOG_DEBUG("onIncoming Interest pit table " << m_pit.size() << " entries");
+  /*NFD_LOG_DEBUG("onIncoming Interest pit table " << m_pit.size() << " entries");
   for (Pit::const_iterator it = m_pit.begin(); it != m_pit.end();
       it++)
   {
 	  NFD_LOG_DEBUG("Interest pit table " << it->getName() << " entries");
 
       //do stuff
-  }
+  }*/
   // detect duplicate Nonce in PIT entry
   bool hasDuplicateNonceInPit = fw::findDuplicateNonce(*pitEntry, interest.getNonce(), inFace) !=
                                 fw::DUPLICATE_NONCE_NONE;

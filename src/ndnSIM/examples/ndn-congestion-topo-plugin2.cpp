@@ -22,8 +22,11 @@
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/ndnSIM-module.h"
+#include "ns3/point-to-point-module.h"
 #include "ns3/ndnSIM/helper/inrpp-stack-helper.hpp"
-#include "ns3/ndnSIM/model/ndn-l3-protocol.hpp"
+#include "ns3/ndnSIM/model/inrpp-l3-protocol.hpp"
+#include "ns3/ndnSIM/NFD/daemon/fw/inrpp-forwarder.hpp"
+#include "ns3/ndnSIM/NFD/daemon/face/inrpp-link-service.hpp"
 
 NS_LOG_COMPONENT_DEFINE ("ndn.inrpp_topology");
 using ndn::Interest;
@@ -76,7 +79,6 @@ static void InData(uint32_t val, const Data& data, const Face& face)
 	NS_LOG_LOGIC("Node " << val << " in data packet "<< data.getName().toUri() << " in face " << face.getId());
 
 }
-
 
 int
 main(int argc, char* argv[])
@@ -147,18 +149,34 @@ main(int argc, char* argv[])
   // Calculate and install FIBs
   ndn::GlobalRoutingHelper::CalculateRoutes();
 
+  NodeContainer nodes = topologyReader.GetNodes();
+  for(uint32_t i = 0; i<nodes.GetN(); i++)
+  {
+	  Ptr<ndn::InrppL3Protocol> l3 = nodes.Get(i)->GetObject<ndn::InrppL3Protocol>();
 
-  Ptr<ndn::L3Protocol> l3 = router2->GetObject<ndn::L3Protocol>();
+	  NS_LOG_LOGIC("L3 "<<l3 << " " << i);
 
-  NS_LOG_LOGIC("L3 "<<l3);
+	  l3->TraceConnectWithoutContext("OutInterests",MakeBoundCallback(&OutInterests,nodes.Get(i)->GetId()));
+	  l3->TraceConnectWithoutContext("InInterests", MakeBoundCallback(&InInterests,nodes.Get(i)->GetId()));
+	  l3->TraceConnectWithoutContext("OutData", MakeBoundCallback(&OutData,nodes.Get(i)->GetId()));
+	  l3->TraceConnectWithoutContext("InData", MakeBoundCallback(&InData,nodes.Get(i)->GetId()));
+	  /*std::shared_ptr<nfd::InrppForwarder> fw = std::static_pointer_cast<nfd::InrppForwarder>(l3->getForwarder()); // or
 
-  l3->TraceConnectWithoutContext("OutInterests",MakeBoundCallback(&OutInterests,router2->GetId()));
-  l3->TraceConnectWithoutContext("InInterests", MakeBoundCallback(&InInterests,router2->GetId()));
-  l3->TraceConnectWithoutContext("OutData", MakeBoundCallback(&OutData,router2->GetId()));
-  l3->TraceConnectWithoutContext("InData", MakeBoundCallback(&InData,router2->GetId()));
-
-  NS_LOG_LOGIC("L3 "<<l3);
-
+	  nfd::FaceTable& faces = fw->getFaceTable();
+	  for (nfd::FaceTable::const_iterator it = faces.begin(); it != faces.end(); ++it)
+	  {
+		  Face& f = *it;
+		  nfd::face::InrppLinkService* l = static_cast<nfd::face::InrppLinkService*>(f.getLinkService());
+		  NS_LOG_LOGIC("Faces "<< l);
+		  l->afterReceiveInrppInterest.connect([this, weakFace](nfd::face::InrppState state) {
+		      shared_ptr<Face> face = weakFace.lock();
+		      if (face != nullptr) {
+		        this->m_outInterests(interest, *face);
+		      }
+		    });
+	  }*/
+	  //l3->getForwarder()->GetObject<nfd::InrppForwarder>();
+  }
 
   Simulator::Stop(Seconds(20.0));
 

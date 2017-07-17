@@ -41,7 +41,7 @@ Face::Face(unique_ptr<LinkService> service, unique_ptr<Transport> transport)
 {
   m_service->setFaceAndTransport(*this, *m_transport);
   m_transport->setFaceAndLinkService(*this, *m_service);
-  m_state = OPEN_LOOP;
+  m_state = InrppState::OPEN_LOOP;
 }
 
 std::ostream&

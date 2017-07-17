@@ -37,6 +37,9 @@ class Strategy;
 } // namespace fw
 
 typedef std::pair<Name,FaceId> nameFace;
+
+class Face;
+//typedef face::InrppState state;
 /** \brief main class of NFD
  *
  *  Forwarder owns all faces and tables, and implements forwarding pipelines.

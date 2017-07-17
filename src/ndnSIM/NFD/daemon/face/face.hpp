@@ -27,7 +27,7 @@
 #define NFD_DAEMON_FACE_HPP
 
 #include "transport.hpp"
-#include "link-service.hpp"
+//#include "link-service.hpp"
 #include "face-counters.hpp"
 #include "face-log.hpp"
 
@@ -37,7 +37,7 @@ namespace face {
 /** \brief identifies a face
  */
 typedef uint64_t FaceId;
-
+class LinkService;
 /// indicates an invalid FaceId
 const FaceId INVALID_FACEID = 0;
 /// identifies the InternalFace used in management
@@ -53,7 +53,7 @@ const FaceId FACEID_RESERVED_MAX = 255;
  */
 typedef TransportState FaceState;
 
-enum InrppState{
+enum class InrppState{
 	CLOSED_LOOP,
 	OPEN_LOOP
 };

@@ -281,7 +281,7 @@ InrppForwarder::onContentStoreMiss(FaceId id, const Interest& interest)
 	std::map<FaceId,uint32_t>::iterator it = m_bytes.find(id);
 	if(it!=m_bytes.end())m_bytes.erase(it);
 
-	m_faceTable.get(id)->setInrppState(nfd::face::CLOSED_LOOP);
+	m_faceTable.get(id)->setInrppState(face::InrppState::CLOSED_LOOP);
 
 	shared_ptr<Interest> inter = make_shared<Interest>(interest);
 	inter->setNonce(0);

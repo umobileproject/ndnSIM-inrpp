@@ -43,7 +43,7 @@ class Node;
 
 namespace ndn {
 
-class L3Protocol;
+class InrppL3Protocol;
 
 /**
  * @ingroup ndn
@@ -99,7 +99,7 @@ public:
                   const std::string& value3 = "", const std::string& attr4 = "",
                   const std::string& value4 = "");
 
-  typedef Callback<shared_ptr<Face>, Ptr<Node>, Ptr<L3Protocol>, Ptr<NetDevice>>
+  typedef Callback<shared_ptr<Face>, Ptr<Node>, Ptr<InrppL3Protocol>, Ptr<NetDevice>>
     FaceCreateCallback;
 
   /**
@@ -250,13 +250,13 @@ public:
 
 private:
   shared_ptr<Face>
-  DefaultNetDeviceCallback(Ptr<Node> node, Ptr<L3Protocol> ndn, Ptr<NetDevice> netDevice) const;
+  DefaultNetDeviceCallback(Ptr<Node> node, Ptr<InrppL3Protocol> ndn, Ptr<NetDevice> netDevice) const;
 
   shared_ptr<Face>
-  PointToPointNetDeviceCallback(Ptr<Node> node, Ptr<L3Protocol> ndn,
+  PointToPointNetDeviceCallback(Ptr<Node> node, Ptr<InrppL3Protocol> ndn,
                                 Ptr<NetDevice> netDevice) const;
   shared_ptr<Face>
-  createAndRegisterFace(Ptr<Node> node, Ptr<L3Protocol> ndn, Ptr<NetDevice> device) const;
+  createAndRegisterFace(Ptr<Node> node, Ptr<InrppL3Protocol> ndn, Ptr<NetDevice> device) const;
 
  // std::string
  // constructFaceUri(Ptr<NetDevice> netDevice);

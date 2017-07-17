@@ -1255,10 +1255,10 @@ private:
         const CallbackImplBase * otherRaw = PeekPointer (other);
         Ptr<CallbackImpl<R,T1,T2,T3,T4,T5,T6,T7,T8,T9> > expected;
         CallbackImpl<R,T1,T2,T3,T4,T5,T6,T7,T8,T9> * expectedRaw = PeekPointer (expected);
-       // NS_FATAL_ERROR ("Incompatible types. (feed to \"c++filt -t\" if needed)" << std::endl <<
-        //                "got=" << Demangle ( typeid (*otherRaw).name () ) << std::endl <<
+        NS_FATAL_ERROR ("Incompatible types. (feed to \"c++filt -t\" if needed)" << std::endl <<
+                        "got=" << Demangle ( typeid (*otherRaw).name () ) << std::endl <<
         //                "expected=" << typeid (*expectedRaw).name ());// << std::endl <<
-                        //"expected=" << Demangle ( typeid (*expectedRaw).name () ));
+                        "expected=" << Demangle ( typeid (*expectedRaw).name () ));
       }
     m_impl = const_cast<CallbackImplBase *> (PeekPointer (other));
   }

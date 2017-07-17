@@ -65,6 +65,8 @@ InrppLinkService::receiveInterest(const Interest& interest)
   {
 	  scheduler::cancel(m_faceStateEvent);
 	  m_face->setInrppState(InrppState::CLOSED_LOOP);
+	  afterChangeInrppState(InrppState::CLOSED_LOOP);
+	  //afterReceiveInterest(interest);
 	  time::nanoseconds m_faceInterval = time::nanoseconds((int)2000000000);
 	  m_faceStateEvent = scheduler::schedule(m_faceInterval,bind(&InrppLinkService::CancelClosedLoop, this));
   }

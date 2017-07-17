@@ -29,11 +29,13 @@
 #include "core/counter.hpp"
 #include "transport.hpp"
 #include "face-log.hpp"
+//#include "face.hpp"
 
 namespace nfd {
 namespace face {
 
 class Face;
+
 
 /** \brief counters provided by LinkService
  *  \note The type name 'LinkServiceCounters' is implementation detail.
@@ -125,6 +127,9 @@ public: // upper interface to be used by forwarding
    */
   void
   sendNack(const ndn::lp::Nack& nack);
+
+
+  //signal::Signal<LinkService, InrppState> afterReceiveInrppInterest;
 
   /** \brief signals on Interest received
    */

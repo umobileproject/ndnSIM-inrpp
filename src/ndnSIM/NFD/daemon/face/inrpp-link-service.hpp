@@ -33,7 +33,7 @@
 namespace nfd {
 namespace face {
 
-
+class Face;
 /** \brief GenericLinkService is a LinkService that implements the NDNLPv2 protocol
  *  \sa http://redmine.named-data.net/projects/nfd/wiki/NDNLPv2
  */
@@ -43,12 +43,15 @@ public:
 
   InrppLinkService(const GenericLinkService::Options& options,  shared_ptr<nfd::Forwarder>, uint64_t bps);
 
+  void
+  receiveInterest(const Interest& interest);
+
+  signal::Signal<InrppLinkService, InrppState> afterChangeInrppState;
+
 private:
   void
   PullPacketFromCS();
 
-  void
-  receiveInterest(const Interest& interest);
 
   void
   CancelClosedLoop();
@@ -57,6 +60,8 @@ private:
   time::nanoseconds m_adjustCapacityInterval;
   scheduler::EventId m_adjustCapacityEvent, m_faceStateEvent;
   uint64_t m_bps;
+  InrppState state;
+
 };
 
 } // namespace face
